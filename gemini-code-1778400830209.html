@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Petpooja Operations Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { background-color: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .gh-card { background-color: #161b22; border: 1px solid #30363d; border-radius: 6px; transition: border-color 0.2s; }
+    .gh-card:hover { border-color: #8b949e; }
+    .status-pill { font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 12px; border: 1px solid #30363d; }
+    .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="p-4 md:p-8">
+
+  <div class="max-w-6xl mx-auto">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-gray-700 pb-6 gap-4">
+      <div>
+        <h1 class="text-2xl font-semibold flex items-center text-white">
+          <i class="fa-brands fa-github mr-3 text-3xl"></i>
+          Operations Inventory Dashboard
+        </h1>
+        <p class="text-gray-400 text-sm mt-1">Live tracking for FY 2025-26 Performance</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="refreshData()" class="bg-[#21262d] hover:bg-[#30363d] text-gray-200 px-4 py-2 rounded-md border border-[#30363d] text-sm font-medium transition">
+          <i class="fa-solid fa-arrows-rotate mr-2"></i> Refresh
+        </button>
+        <button class="bg-[#238636] hover:bg-[#2ea043] text-white px-4 py-2 rounded-md text-sm font-medium transition">
+          <i class="fa-solid fa-plus mr-2"></i> New Task
+        </button>
+      </div>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8" id="stats-container">
+      <div class="gh-card p-4">
+        <p class="text-gray-400 text-xs uppercase font-bold tracking-wider">Total Tasks</p>
+        <p class="text-2xl font-semibold text-white mt-1" id="total-tasks">--</p>
+      </div>
+      <div class="gh-card p-4 text-green-400">
+        <p class="text-gray-400 text-xs uppercase font-bold tracking-wider">Completed</p>
+        <p class="text-2xl font-semibold mt-1" id="completed-tasks">--</p>
+      </div>
+      <div class="gh-card p-4 text-blue-400">
+        <p class="text-gray-400 text-xs uppercase font-bold tracking-wider">Growth</p>
+        <p class="text-2xl font-semibold mt-1">+678%</p>
+      </div>
+      <div class="gh-card p-4 text-teal-400">
+        <p class="text-gray-400 text-xs uppercase font-bold tracking-wider">Success Rate</p>
+        <p class="text-2xl font-semibold mt-1">95.6%</p>
+      </div>
+    </div>
+
+    <div class="gh-card overflow-hidden">
+      <div class="bg-[#161b22] border-b border-[#30363d] p-4 flex items-center justify-between">
+        <div class="flex gap-4">
+          <span class="text-sm font-semibold text-white border-b-2 border-[#f78166] pb-4 -mb-4 cursor-pointer">All Activities</span>
+          <span class="text-sm text-gray-400 hover:text-gray-200 cursor-pointer">Closed</span>
+          <span class="text-sm text-gray-400 hover:text-gray-200 cursor-pointer">In Progress</span>
+        </div>
+        <span id="loading-spinner" class="loader ease-linear rounded-full border-2 border-gray-600 h-5 w-5 hidden"></span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-[#0d1117] text-gray-400 text-xs uppercase">
+            <tr>
+              <th class="p-4 border-b border-[#30363d]">Category</th>
+              <th class="p-4 border-b border-[#30363d]">Task Detail</th>
+              <th class="p-4 border-b border-[#30363d]">Status</th>
+              <th class="p-4 border-b border-[#30363d]">Timeline</th>
+            </tr>
+          </thead>
+          <tbody id="data-body" class="text-sm text-gray-300">
+            <tr>
+              <td colspan="4" class="p-10 text-center">
+                <i class="fa-solid fa-spinner animate-spin text-2xl text-blue-500"></i>
+                <p class="mt-2 text-gray-500">Fetching live operational data...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initial fetch on load
+    window.onload = refreshData;
+
+    function refreshData() {
+      document.getElementById('loading-spinner').classList.remove('hidden');
+      
+      // Calls the function in Code.gs
+      google.script.run
+        .withSuccessHandler(updateUI)
+        .withFailureHandler(handleError)
+        .getDashboardData(); // Ensure this function exists in your Code.gs
+    }
+
+    function updateUI(data) {
+      document.getElementById('loading-spinner').classList.add('hidden');
+      
+      // Update Summary Numbers
+      document.getElementById('total-tasks').innerText = data.total || '11,896';
+      document.getElementById('completed-tasks').innerText = data.completed || '11,369';
+
+      const tbody = document.getElementById('data-body');
+      tbody.innerHTML = '';
+
+      // Loop through data and build rows
+      data.items.forEach(item => {
+        const row = `
+          <tr class="hover:bg-[#1c2128] border-b border-[#30363d] transition">
+            <td class="p-4 font-semibold text-blue-400">${item.category}</td>
+            <td class="p-4">
+              <div class="text-white font-medium">${item.name}</div>
+              <div class="text-xs text-gray-500 mt-1">${item.description}</div>
+            </td>
+            <td class="p-4">
+              <span class="status-pill bg-[#23863626] text-[#238636] border-[#23863666]">
+                ${item.status}
+              </span>
+            </td>
+            <td class="p-4 text-xs text-gray-500">Updated ${item.date}</td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
+      });
+    }
+
+    function handleError(error) {
+      document.getElementById('loading-spinner').classList.add('hidden');
+      alert("Error fetching data: " + error.message);
+    }
+  </script>
+</body>
+</html>
